@@ -713,7 +713,9 @@
 
             sendAmount(amount) {
                 if (!this.enableIncentives) return;
-                this.sendTmi(`$${amount}`);
+                const value = parseFloat(amount);
+                const num = value % 1 !== 0 ? value.toFixed(2) : value;
+                this.sendTmi(`$${num}`);
             },
 
             sendTmi(message) {
