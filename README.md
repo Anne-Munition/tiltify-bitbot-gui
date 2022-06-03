@@ -1,6 +1,6 @@
 # Tiltify BitBot GUI
 
-#### A standalone desktop webpage to bridge Tiltify and BitBot by use of Twitch chat. 
+#### A standalone desktop webpage to bridge Tiltify and InstructBot(BitBot) by use of Twitch chat. 
 ![Example Image](./example.png)
 
 ## Initial Setup
@@ -41,7 +41,7 @@ The Tiltify and Twitch settings button colors signify the connection status.
 
  * INCENTIVES
     * All donation amounts will be posted to the temp twitch chat. Example: ``$10``
-    * Enter an amount and click the Test button to send the amount to the temp Twitch chat and trigger InstructBot(BitBot).
+    * Enter an amount and click the Test button to send the amount to the temp Twitch chat and trigger BitBot.
   * REWARDS
     * If rewards are available they will populate in the table.
     * When somebody claims a reward with a donation it will post the donation ID to twitch chat prepended with an 'R'. Example: ``R123456``
