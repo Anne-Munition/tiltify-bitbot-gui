@@ -40,8 +40,10 @@
         background-color: #767676;
     }
 
-    .logo {
+    .logo img {
         height: 48px;
+        position: relative;
+        top: 4px;
     }
 
     .name {
@@ -113,10 +115,12 @@
         <v-main>
             <v-app-bar static app>
                 <v-row class="d-flex justify-space-between" align="center">
-                    <a :href="campaignUrl" v-if="campaignUrl" target="_blank">
-                        <img class="logo ml-3" src="./logo.png" alt="">
-                    </a>
-                    <img v-else class="logo ml-3" src="./logo.png" alt="">
+                    <div class="logo ml-3" >
+                        <a :href="campaignUrl" v-if="campaignUrl" target="_blank">
+                            <img src="./logo.png" alt="">
+                        </a>
+                        <img v-else src="./logo.png" alt="">
+                    </div>
                     <v-col class="progress px-1">
                         <v-row no-gutters>
                             <span>Raised</span>
