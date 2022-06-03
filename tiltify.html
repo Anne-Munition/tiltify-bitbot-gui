@@ -781,6 +781,11 @@
 
             toggleMute() {
                 this.mute = !this.mute;
+                if (!this.mute) {
+                    notification.pause();
+                    notification.currentTime = 0;
+                    notification.play();
+                }
                 localStorage.setItem('mute', this.mute);
             },
 
