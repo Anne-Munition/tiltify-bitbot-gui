@@ -369,7 +369,7 @@
                                 <v-btn small class="mr-2" @click="twitchDisconnect" color="red">
                                     Disconnect
                                 </v-btn>
-                                <v-btn small @click="sendTmi('Tiltify Test Message')" color="blue">
+                                <v-btn small @click="sendTmi('Tiltify-BitBot Test Message')" color="blue">
                                     Test
                                     <v-icon small class="ml-1">mdi-email-send-outline</v-icon>
                                 </v-btn>
@@ -389,6 +389,7 @@
 <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
 <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/luxon@2.4.0/build/global/luxon.min.js"></script>
+<script src="https://cdn.socket.io/4.5.0/socket.io.min.js" integrity="sha384-7EyYLQZgWBi67fBtVxw60/OWl1kjsfrPFcaU0pp0nAh+i8FD068QogUvg85Ewy1k" crossorigin="anonymous"></script>
 <script>
     const DateTime = luxon.DateTime;
     let socket;
@@ -399,6 +400,7 @@
     let tmi;
     const notification = new Audio('notification.mp3');
     let idleTimeout;
+    let clearWs;
 
     Vue.config.devtools = true
     new Vue({
@@ -468,6 +470,7 @@
         },
 
         mounted() {
+            this.connectToClearWS()
             document.addEventListener("click", this.resetIdleTimer);
             document.addEventListener("keypress", this.resetIdleTimer);
             document.addEventListener("scroll", this.resetIdleTimer);
@@ -508,18 +511,19 @@
                 }
             },
 
-            clear(item) {
+            clear(item, fromWs) {
                 if (item.cleared) return;
                 item.cleared = true;
+                if (!fromWs) this.emitClear(item.id);
                 const prevCleared = JSON.parse(localStorage.getItem('cleared_ids') || "[]");
                 prevCleared.unshift(item.id);
                 if (prevCleared.length > prevDonationsCount) prevCleared.pop();
                 localStorage.setItem('cleared_ids', JSON.stringify(prevCleared));
-                // TODO: send websocket message to other clients
             },
 
-            clearAll() {
+            clearAll(e, fromWs) {
                 this.items.forEach(x => x.cleared = true);
+                if (!fromWs) this.emitClearAll();
                 const prevCleared = [...this.items].slice(0, 25).map(x => x.id);
                 localStorage.setItem('cleared_ids', JSON.stringify(prevCleared));
             },
@@ -613,7 +617,7 @@
                 }
                 socket = new WebSocket('wss://websockets.tiltify.com/socket/websocket?vsn=2.0.0')
                 socket.addEventListener('open', (event) => {
-                    console.log('Connected to WS server');
+                    console.log('Connected to Tiltify WS server');
                     // if (reconnectTimer) clearInterval(reconnectTimer)
                     this.progress = false;
                     this.tiltifyConnected = true;
@@ -627,7 +631,7 @@
                     this.getDonations();
                 });
                 socket.addEventListener('close', (event) => {
-                    console.log('Disconnected from WS server');
+                    console.log('Disconnected from Tiltify WS server');
                     this.tiltifyConnected = false;
                     if (!reconnecting) {
                         reconnectTimer = setTimeout(() => {
@@ -640,12 +644,7 @@
                     if (nonce) return;
                     console.log('Message from server ', event.data);
                     if (type === 'donation' && payload) {
-                        const duplicate = this.items.find(x => {
-                            return x.amount === payload.amount &&
-                                x.name === payload.name &&
-                                x.completedAt === payload.completedAt;
-                        })
-                        if (duplicate) return;
+                        if (this.items.find(x => x.id === payload.id)) return;
 
                         const rewardId = payload.reward_id;
                         this.sendAmount(payload.amount);
@@ -791,7 +790,47 @@
 
             sendCustom() {
                 this.sendTmi('Custom')
-            }
+            },
+
+            connectToClearWS() {
+                if (!websocketUrl) {
+                    console.warn('No websocket URL. Unable to sync donation clearing between multiple clients.')
+                    return;
+                }
+                clearWs = io(websocketUrl, {
+                    transports: ["websocket"]
+                });
+                clearWs.on("connect", () => {
+                    console.log('Connected to Sync WS server');
+                });
+                clearWs.on("disconnect", () => {
+                    console.log('Disconnected to Sync WS server');
+                });
+                clearWs.on('tiltify_clear', id => {
+                    if (id === 'all') {
+                        console.log('ALL ITEMS CLEARED FROM OTHER USER');
+                        this.clearAll(null, true)
+                        return;
+                    }
+                    const item = this.items.find(x => x.id === id);
+                    if (item) {
+                        console.log(`ITEM CLEARED FROM OTHER USER - ${item.name} $${item.amount}`);
+                        this.clear(item, true);
+                    }
+                })
+            },
+
+            emitClear(id) {
+                if (clearWs && clearWs.connected) {
+                    clearWs.emit('tiltify_clear', id);
+                }
+            },
+
+            emitClearAll() {
+                if (clearWs && clearWs.connected) {
+                    clearWs.emit('tiltify_clear', 'all');
+                }
+            },
         }
     });
 </script>
