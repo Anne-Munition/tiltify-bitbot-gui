@@ -117,8 +117,6 @@
                         <img class="logo ml-3" src="./logo.png" alt="">
                     </a>
                     <img v-else class="logo ml-3" src="./logo.png" alt="">
-
-
                     <v-col class="progress px-1">
                         <v-row no-gutters>
                             <span>Raised</span>
@@ -206,7 +204,7 @@
                     <v-card-title>
                         Tiltify Settings
                         <v-progress-circular
-                                v-if="progress"
+                                v-if="loadingSpinner"
                                 indeterminate
                                 color="primary"
                                 class="ml-2"
@@ -348,7 +346,7 @@
                     <v-card-title>
                         Twitch Settings
                         <v-progress-circular
-                                v-if="progress"
+                                v-if="loadingSpinner"
                                 indeterminate
                                 color="primary"
                                 class="ml-2"
@@ -393,6 +391,7 @@
 </html>
 <script src="./config.js"></script>
 <script src="./scripts/tmi.min.js"></script>
+<script src="./scripts/rws.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
@@ -407,8 +406,6 @@
     let socket;
     const prevDonationsCount = 25;
     let heartbeatTimer = null;
-    let reconnectTimer = null;
-    let reconnecting = false;
     let tmi;
     const notification = new Audio('notification.mp3');
     let idleTimeout;
@@ -482,7 +479,7 @@
                 testAmount: null,
                 raised: 0,
                 goal: 0,
-                progress: false,
+                loadingSpinner: false,
                 tiltifyUrl: null,
                 campaignSlug: null,
                 rules: {
@@ -588,7 +585,7 @@
             },
 
             async search() {
-                this.progress = true;
+                this.loadingSpinner = true;
                 const user = await axios.get(`https://tiltify.com/api/v3/users/${this.tiltifyName.toLowerCase()}`).then(({data}) => data.data);
                 const campaigns = await axios.get(`https://tiltify.com/api/v3/users/${user.id}/campaigns`).then(({data}) => data.data);
                 const sortedCampaign = [...campaigns].sort((a, b) => {
@@ -598,7 +595,7 @@
                 this.tiltifyUrl = user.url;
                 this.campaignId = sortedCampaign[0].id;
                 this.campaignName = sortedCampaign[0].name;
-                this.campaignSlug =sortedCampaign[0].slug;
+                this.campaignSlug = sortedCampaign[0].slug;
                 localStorage.setItem('tiltify_name', this.tiltifyName);
                 localStorage.setItem('tiltify_url', this.tiltifyUrl);
                 localStorage.setItem('campaign_id', this.campaignId);
@@ -674,21 +671,14 @@
             socketConnect() {
                 let count = 17;
                 const id = this.campaignId;
-
-                if (socket) {
-                    if (heartbeatTimer) clearInterval(heartbeatTimer);
-                    if (socket.readyState === 0 || socket.readyState === 1) {
-                        reconnecting = true;
-                        socket.close();
-                    }
+                if (socket && (socket.readyState === 0 || socket.readyState === 1)) {
+                    socket.close();
                 }
-                socket = new WebSocket('wss://websockets.tiltify.com/socket/websocket?vsn=2.0.0')
+                socket = new ReconnectingWebSocket('wss://websockets.tiltify.com/socket/websocket?vsn=2.0.0')
                 socket.addEventListener('open', (event) => {
                     console.log('Connected to Tiltify WS server');
-                    // if (reconnectTimer) clearInterval(reconnectTimer)
-                    this.progress = false;
+                    this.loadingSpinner = false;
                     this.tiltifyConnected = true;
-                    reconnecting = false;
                     socket.send(JSON.stringify(["15", "15", `campaign.${id}.campaign`, "phx_join", {}]));
                     socket.send(JSON.stringify(["17", "17", `campaign.${id}.donation`, "phx_join", {}]));
                     heartbeatTimer = setInterval(() => {
@@ -700,11 +690,6 @@
                 socket.addEventListener('close', (event) => {
                     console.log('Disconnected from Tiltify WS server');
                     this.tiltifyConnected = false;
-                    if (!reconnecting) {
-                        reconnectTimer = setTimeout(() => {
-                            this.socketConnect();
-                        }, 3000);
-                    }
                 });
                 socket.addEventListener('message', (event) => {
                     const [, nonce, , type, payload] = JSON.parse(event.data);
@@ -735,7 +720,7 @@
             },
 
             twitchConnect() {
-                this.progress = true;
+                this.loadingSpinner = true;
                 localStorage.setItem('twitch_channel', this.twitchChannel);
 
                 if (tmi) {
@@ -761,7 +746,7 @@
                 });
 
                 tmi.connect().then(() => {
-                    this.progress = false;
+                    this.loadingSpinner = false;
                 });
             },
 
