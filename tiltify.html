@@ -473,7 +473,6 @@
             this.connectToClearWS()
             document.addEventListener("click", this.resetIdleTimer);
             document.addEventListener("keypress", this.resetIdleTimer);
-            document.addEventListener("scroll", this.resetIdleTimer);
             document.addEventListener("mouseover", this.resetIdleTimer);
             setInterval(() => {
                 this.now = new Date().valueOf();
