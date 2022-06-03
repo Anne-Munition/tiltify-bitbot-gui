@@ -793,7 +793,7 @@
             },
 
             connectToClearWS() {
-                if (!websocketUrl) {
+                if (!websocketUrl || websocketUrl === 'wss://example.com') {
                     console.warn('No websocket URL. Unable to sync donation clearing between multiple clients.')
                     return;
                 }
