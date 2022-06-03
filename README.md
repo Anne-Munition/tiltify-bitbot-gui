@@ -37,6 +37,7 @@ The Tiltify and Twitch settings button colors signify the connection status.
 * Donation Rewards will be retrieved from the API if available and populate the rewards table.
 * Press the Refresh button in the Tiltify settings to reestablish the Tiltify connection and refresh the data from the API.
 * Toggle the Purple volume button in the Tiltify settings to mute/unmute the new donation notification sound. (DING)
+  * Un-muting the notification will play a test notification.
 
 
  * INCENTIVES
