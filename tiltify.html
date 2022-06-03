@@ -110,8 +110,13 @@
         <v-main>
             <v-app-bar static app>
                 <v-row class="d-flex justify-space-between" align="center">
-                    <img class="logo ml-3" src="./logo.png" alt="">
-                    <v-col class="progress">
+                    <a :href="campaignUrl" v-if="campaignUrl" target="_blank">
+                        <img class="logo ml-3" src="./logo.png" alt="">
+                    </a>
+                    <img v-else class="logo ml-3" src="./logo.png" alt="">
+
+
+                    <v-col class="progress px-1">
                         <v-row no-gutters>
                             <span>Raised</span>
                             <v-spacer></v-spacer>
@@ -475,6 +480,8 @@
                 raised: 0,
                 goal: 0,
                 progress: false,
+                tiltifyUrl: null,
+                campaignSlug: null,
                 rules: {
                     required: (val) => {
                         return !!val || "Required";
@@ -499,11 +506,9 @@
                 if (!this.enableRewards && !this.enableIncentives) return 'orange';
                 return 'green';
             },
-            raisedFormatted() {
-                return this.raised.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-            },
-            goalFormatted() {
-                return this.goal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            campaignUrl() {
+                if (!this.tiltifyUrl || !this.campaignSlug) return null;
+                return `${this.tiltifyUrl}/${this.campaignSlug}`
             }
         },
 
@@ -541,6 +546,8 @@
                 this.campaignId = localStorage.getItem('campaign_id');
                 this.tiltifyName = localStorage.getItem('tiltify_name');
                 this.campaignName = localStorage.getItem('campaign_name');
+                this.tiltifyUrl = localStorage.getItem('tiltify_url');
+                this.campaignSlug = localStorage.getItem('campaign_slug');
                 this.enableRewards = localStorage.getItem('rewards_enabled') === 'true';
                 this.enableIncentives = localStorage.getItem('incentives_enabled') === 'true';
                 if (this.campaignId && this.tiltifyName) {
@@ -585,11 +592,15 @@
                     return b.startsAt - a.startsAt;
                 });
                 this.tiltifyName = user.username;
+                this.tiltifyUrl = user.url;
                 this.campaignId = sortedCampaign[0].id;
                 this.campaignName = sortedCampaign[0].name;
+                this.campaignSlug =sortedCampaign[0].slug;
                 localStorage.setItem('tiltify_name', this.tiltifyName);
+                localStorage.setItem('tiltify_url', this.tiltifyUrl);
                 localStorage.setItem('campaign_id', this.campaignId);
                 localStorage.setItem('campaign_name', this.campaignName);
+                localStorage.setItem('campaign_slug', this.campaignSlug);
                 await this.getCampaign();
                 await this.getRewards();
                 this.socketConnect();
