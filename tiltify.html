@@ -135,6 +135,9 @@
                         </v-row>
                     </v-col>
                     <div>
+                        <v-btn small color="deep-purple lighten-1" @click="sendCustom" class="mr-1">
+                            <v-icon>mdi-arrow-decision</v-icon>
+                        </v-btn>
                         <v-btn small color="blue" @click="clearAll" class="mr-1">
                             Clear
                             <v-icon class="ml-1">mdi-notification-clear-all</v-icon>
@@ -785,6 +788,10 @@
                 this.stopPropagation(e);
                 this.sendReward(id);
             },
+
+            sendCustom() {
+                this.sendTmi('Custom')
+            }
         }
     });
 </script>
