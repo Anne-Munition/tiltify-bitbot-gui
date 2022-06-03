@@ -129,9 +129,9 @@
                             ></v-progress-linear>
                         </v-row>
                         <v-row class="progress-amounts" no-gutters>
-                            <span>${{raised.toFixed(2)}}</span>
+                            <span>${{raisedFormatted}}</span>
                             <v-spacer></v-spacer>
-                            <span>${{goal.toFixed(2)}}</span>
+                            <span>${{goalFormatted}}</span>
                         </v-row>
                     </v-col>
                     <div>
@@ -454,6 +454,12 @@
                 if (!this.tiltifyConnected) return 'red';
                 if (!this.enableRewards && !this.enableIncentives) return 'orange';
                 return 'green';
+            },
+            raisedFormatted() {
+                return this.raised.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            },
+            goalFormatted() {
+                return this.goal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             }
         },
 
