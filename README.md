@@ -1,6 +1,7 @@
 # Tiltify BitBot GUI
 
 #### A standalone desktop webpage to bridge Tiltify and BitBot by use of Twitch chat. 
+![Example Image](./example.png)
 
 ## Initial Setup
 * Download and extract files and rename ``config-example.js`` to ``config.js``.
