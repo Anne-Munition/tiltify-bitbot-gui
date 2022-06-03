@@ -129,9 +129,9 @@
                             ></v-progress-linear>
                         </v-row>
                         <v-row class="progress-amounts" no-gutters>
-                            <span>${{raisedFormatted}}</span>
+                            <animated-number :number="raised" ref="raised"></animated-number>
                             <v-spacer></v-spacer>
-                            <span>${{goalFormatted}}</span>
+                            <animated-number :number="goal" ref="goal"></animated-number>
                         </v-row>
                     </v-col>
                     <div>
@@ -386,11 +386,15 @@
 <script src="./config.js"></script>
 <script src="./scripts/tmi.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/luxon@2.4.0/build/global/luxon.min.js"></script>
-<script src="https://cdn.socket.io/4.5.0/socket.io.min.js" integrity="sha384-7EyYLQZgWBi67fBtVxw60/OWl1kjsfrPFcaU0pp0nAh+i8FD068QogUvg85Ewy1k" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+<script src="https://cdn.socket.io/4.5.0/socket.io.min.js"
+        integrity="sha384-7EyYLQZgWBi67fBtVxw60/OWl1kjsfrPFcaU0pp0nAh+i8FD068QogUvg85Ewy1k"
+        crossorigin="anonymous"></script>
 <script>
+    const debug = false;
     const DateTime = luxon.DateTime;
     let socket;
     const prevDonationsCount = 25;
@@ -401,6 +405,46 @@
     const notification = new Audio('notification.mp3');
     let idleTimeout;
     let clearWs;
+
+    Vue.component('animated-number', {
+        template: "<span>${{formattedNumber}}</span>",
+        props: ['number'],
+        data() {
+            return {
+                animatedValue: 0,
+            }
+        },
+        computed: {
+            formattedNumber() {
+                return this.animatedValue.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+        },
+        mounted() {
+            this.animatedValue = this.number ? this.number : 0;
+            this.animate(this.number)
+        },
+        watch: {
+            number(value) {
+                this.animate(value);
+            }
+        },
+        methods: {
+            animate(value) {
+                anime({
+                    targets: this,
+                    animatedValue: value,
+                    duration: 500,
+                    easing: 'linear',
+                    delay: 0,
+                    round: null,
+                });
+            },
+            setValue(num) {
+                this.animatedValue = num;
+                this.number = num;
+            }
+        }
+    })
 
     Vue.config.devtools = true
     new Vue({
@@ -557,8 +601,12 @@
                         authorization: `Bearer ${tiltifyToken}`
                     },
                 }).then(({data}) => {
-                    this.goal = data.data.fundraiserGoalAmount;
-                    this.raised = data.data.amountRaised;
+                    const goal = data.data.fundraiserGoalAmount;
+                    const raised = data.data.amountRaised;
+                    this.$refs.raised.setValue(raised);
+                    this.$refs.goal.setValue(goal);
+                    this.goal = goal;
+                    this.raised = raised;
                 });
             },
 
@@ -647,7 +695,7 @@
                 socket.addEventListener('message', (event) => {
                     const [, nonce, , type, payload] = JSON.parse(event.data);
                     if (nonce) return;
-                    console.log('Message from server ', event.data);
+                    if (debug) console.log('Message from server ', payload);
                     if (type === 'donation' && payload) {
                         if (this.items.find(x => x.id === payload.id)) return;
 
@@ -726,7 +774,7 @@
 
             sendTmi(message) {
                 if (tmi && tmi.readyState() === 'OPEN') {
-                    console.log("SENDING: ", message);
+                    if (debug) console.log("SENDING: ", message);
                     tmi.say(this.twitchChannel, message.toString());
                 }
             },
@@ -815,13 +863,13 @@
                 });
                 clearWs.on('tiltify_clear', id => {
                     if (id === 'all') {
-                        console.log('ALL ITEMS CLEARED FROM OTHER USER');
+                        if (debug) console.log('ALL ITEMS CLEARED FROM OTHER USER');
                         this.clearAll(null, true)
                         return;
                     }
                     const item = this.items.find(x => x.id === id);
                     if (item) {
-                        console.log(`ITEM CLEARED FROM OTHER USER - ${item.name} $${item.amount}`);
+                        if (debug) console.log(`ITEM CLEARED FROM OTHER USER - ${item.name} $${item.amount}`);
                         this.clear(item, true);
                     }
                 })
