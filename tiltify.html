@@ -245,48 +245,6 @@
                                         <v-expansion-panel-content>
                                             When enabled, this will send ALL donations to the Twitch chat.
                                             <span class="example">$10</span>
-                                            <!--<v-simple-table>
-                                                <template v-slot:default>
-                                                    <thead>
-                                                    <tr>
-                                                        <th class="text-left">
-                                                            Amount
-                                                        </th>
-                                                        <th class="text-left">
-                                                            Incentive Name
-                                                        </th>
-                                                        <th class="text-right">
-                                                            Actions
-                                                        </th>
-                                                    </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                    <tr v-for="(incentive) in sortedIncentives" :key="incentive.id">
-                                                        <td>${{ incentive.amount }}</td>
-                                                        <td>
-                                                            {{ incentive.name }}
-                                                        </td>
-                                                        <td class="text-right">
-                                                            <v-icon small class="mr-1"
-                                                                    @click="copyToClipboard(`$${incentive.amount}`)">
-                                                                mdi-clipboard-multiple-outline
-                                                            </v-icon>
-                                                            <v-icon small class="mr-1"
-                                                                    @click="sendAmount(incentive)">
-                                                                mdi-play-circle-outline
-                                                            </v-icon>
-                                                            &lt;!&ndash;<v-icon small class="mr-1"
-                                                                    @click="editIncentive(incentive)">
-                                                                mdi-pencil
-                                                            </v-icon>
-                                                            <v-icon small @click="deleteIncentive(incentive)">
-                                                                mdi-close
-                                                            </v-icon>&ndash;&gt;
-                                                        </td>
-                                                    </tr>
-                                                    </tbody>
-                                                </template>
-                                            </v-simple-table>-->
                                             <v-container>
                                                 <v-form ref="testIncentive">
                                                     <v-row align="center">
@@ -830,6 +788,3 @@
         }
     });
 </script>
-
-
-//
