@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tiltify BitBot</title>
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet"/>
+</head>
+<style>
+    html,
+    body {
+        background-color: #121212;
+    }
+
+    [v-cloak] {
+        display: none;
+    }
+
+    .items {
+        background: rgba(100, 65, 165, 0.8);
+        border-radius: 5px;
+        padding: 0.5em;
+        position: relative;
+    }
+
+    .items.cleared {
+        background: #323436;
+    }
+
+    .copy {
+        cursor: pointer;
+    }
+
+    .no_data {
+        text-align: center;
+        background-color: #767676;
+    }
+
+    .logo {
+        height: 36px;
+    }
+
+    .name {
+        font-size: 1.5em;
+        color: #fff;
+    }
+
+    .amount {
+        font-size: 1.5em;
+        color: #f9d71a;
+    }
+
+    .date {
+        color: #aeb2b4;
+        text-align: right;
+        font-size: 0.8em;
+        position: relative;
+        bottom: 14px;
+    }
+
+    .message {
+        color: #aeb2b4;
+    }
+
+    .reward {
+        color: #aeb2b4;
+        font-size: .8em;
+    }
+
+    .reward-image {
+        height: 28px;
+    }
+
+    .theme--dark.v-divider {
+        border-color: hsla(0, 0%, 100%, .25);
+    }
+
+    .example {
+        display: inline-block;
+        background-color: #5e5959;
+        border-radius: 3px;
+        padding-left: 5px;
+        padding-right: 5px;
+        margin-left: 5px;
+    }
+
+    .resend-amount {
+        position: relative;
+        top: 1px;
+    }
+
+    .progress {
+        font-size: 0.8em;
+        width: auto;
+        min-width: 150px;
+        max-width: 800px;
+        margin-right: 12px;
+        margin-left: 12px;
+    }
+
+    .progress-amounts {
+        font-size: 1.0em;
+        font-weight: bold;
+    }
+</style>
+<body>
+<div id="app" v-cloak>
+    <v-app>
+        <v-main>
+            <v-app-bar static app>
+                <v-row class="d-flex justify-space-between" align="center">
+                    <img class="logo ml-3" src="https://miro.medium.com/max/722/1*VN30yC5R4zYsr3kw4KbTSA.png" alt="">
+                    <v-col class="progress">
+                        <v-row no-gutters>
+                            <span>Raised</span>
+                            <v-spacer></v-spacer>
+                            <span>Goal</span>
+                        </v-row>
+                        <v-row no-gutters>
+                            <v-progress-linear
+                                    v-model="raisedPercent"
+                                    :color="raisedPercent >= 100 ? 'orange' : 'green'"
+                                    height="10"
+                                    rounded
+                                    background-color="#767676"
+                                    class="my-1"
+                                    :striped="raisedPercent >= 100"
+                            ></v-progress-linear>
+                        </v-row>
+                        <v-row class="progress-amounts" no-gutters>
+                            <span>${{raised.toFixed(2)}}</span>
+                            <v-spacer></v-spacer>
+                            <span>${{goal.toFixed(2)}}</span>
+                        </v-row>
+                    </v-col>
+                    <div>
+                        <v-btn small color="blue" @click="clearAll" class="mr-1">
+                            Clear
+                            <v-icon class="ml-1">mdi-notification-clear-all</v-icon>
+                        </v-btn>
+                        <v-btn small @click="tiltifyDialog = true" :color="tiltifyButtonColor"
+                               class="mr-1">
+                            Tiltify
+                            <v-icon class="ml-1">mdi-cogs</v-icon>
+                        </v-btn>
+                        <v-btn small class="mr-3" @click="twitchDialog = true"
+                               :color="twitchConnected ? 'green' : 'red'">
+                            Twitch
+                            <v-icon class="ml-1">mdi-cogs</v-icon>
+                        </v-btn>
+                    </div>
+                </v-row>
+            </v-app-bar>
+            <v-container>
+                <div class="items no_data" v-if="!items.length">
+                    No Data
+                </div>
+                <div id="items-container">
+                    <v-container>
+                        <div v-for="(item, i) in sortedItems" :key="i" class="items mb-3"
+                             :class="{cleared: item.cleared}"
+                             @click="clear(item)">
+                            <v-row no-gutters align="center">
+                                <span class="name">{{ item.name }}&nbsp;</span>
+                                <span class="amount">${{ formattedAmount(item.amount)}}</span>
+
+                                <v-icon small @click="resendAmount($event, item.amount)" class="ml-1 resend-amount">
+                                    mdi-refresh
+                                </v-icon>
+                                <v-spacer></v-spacer>
+                                <span class="date">{{ dateFormatted(item) }}</span>
+                            </v-row>
+                            <div class="message">
+                                {{ item.comment }}
+                            </div>
+                            <v-divider class="my-2" v-if="item.reward && enableRewards"></v-divider>
+                            <v-container fill-height v-if="item.reward && enableRewards" class="reward">
+                                <v-row align="center">
+                                    <img :src="item.reward.image.src" :alt="item.reward.image.alt"
+                                         class="reward-image mr-2">
+                                    <span>{{ item.reward.name }}</span>
+                                    <v-spacer></v-spacer>
+                                    <v-icon @click="resendReward($event, item.reward.id)" class="ml-1">mdi-refresh
+                                    </v-icon>
+                                </v-row>
+                            </v-container>
+                        </div>
+                    </v-container>
+                </div>
+            </v-container>
+            </v-container>
+            <v-dialog v-model="tiltifyDialog" max-width="720">
+                <v-card>
+                    <v-card-title>
+                        Tiltify Settings
+                        <v-progress-circular
+                                v-if="progress"
+                                indeterminate
+                                color="primary"
+                                class="ml-2"
+                                size="24"
+                                width="2"
+                        ></v-progress-circular>
+                        <v-spacer></v-spacer>
+                        <v-btn small @click="toggleMute" class="mr-2" color=purple>
+                            <v-icon v-if="!mute">mdi-volume-high</v-icon>
+                            <v-icon v-else>mdi-volume-mute</v-icon>
+                        </v-btn>
+                        <v-btn small @click="search" color="blue-grey lighten-1">
+                            <v-icon class="ml-1">mdi-refresh</v-icon>
+                        </v-btn>
+                    </v-card-title>
+                    <v-card-text>
+                        <v-container>
+                            <v-row>
+                                <v-col cols="5">
+                                    <v-text-field v-model="tiltifyName" label="Tiltify Username"
+                                                  @keydown.enter="search"></v-text-field>
+                                </v-col>
+                                <v-spacer></v-spacer>
+                                <v-col cols="3">
+                                    <v-text-field readonly disabled v-model="campaignId"
+                                                  label="Campaign ID"></v-text-field>
+                                </v-col>
+                            </v-row>
+                            <v-row>
+                                <v-col>
+                                    <v-text-field readonly disabled v-model="campaignName"
+                                                  label="Campaign Name"></v-text-field>
+                                </v-col>
+                            </v-row>
+                            <v-row>
+                                <v-expansion-panels>
+                                    <v-expansion-panel>
+                                        <v-expansion-panel-header>
+                                            <v-row>
+                                                <v-col cols="auto">
+                                                    <v-switch class="ma-0 pa-0" v-model="enableIncentives"
+                                                              @click="stopPropagation" dense hide-details
+                                                              label="Incentives"></v-switch>
+                                                </v-col>
+                                            </v-row>
+                                        </v-expansion-panel-header>
+                                        <v-expansion-panel-content>
+                                            When enabled, this will send ALL donations to the Twitch chat.
+                                            <span class="example">$10</span>
+                                            <!--<v-simple-table>
+                                                <template v-slot:default>
+                                                    <thead>
+                                                    <tr>
+                                                        <th class="text-left">
+                                                            Amount
+                                                        </th>
+                                                        <th class="text-left">
+                                                            Incentive Name
+                                                        </th>
+                                                        <th class="text-right">
+                                                            Actions
+                                                        </th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    <tr v-for="(incentive) in sortedIncentives" :key="incentive.id">
+                                                        <td>${{ incentive.amount }}</td>
+                                                        <td>
+                                                            {{ incentive.name }}
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <v-icon small class="mr-1"
+                                                                    @click="copyToClipboard(`$${incentive.amount}`)">
+                                                                mdi-clipboard-multiple-outline
+                                                            </v-icon>
+                                                            <v-icon small class="mr-1"
+                                                                    @click="sendAmount(incentive)">
+                                                                mdi-play-circle-outline
+                                                            </v-icon>
+                                                            &lt;!&ndash;<v-icon small class="mr-1"
+                                                                    @click="editIncentive(incentive)">
+                                                                mdi-pencil
+                                                            </v-icon>
+                                                            <v-icon small @click="deleteIncentive(incentive)">
+                                                                mdi-close
+                                                            </v-icon>&ndash;&gt;
+                                                        </td>
+                                                    </tr>
+                                                    </tbody>
+                                                </template>
+                                            </v-simple-table>-->
+                                            <v-container>
+                                                <v-form ref="testIncentive">
+                                                    <v-row align="center">
+                                                        <v-col cols="4">
+
+                                                            <v-text-field v-model="testAmount"
+                                                                          label="Amount"
+                                                                          :rules="[rules.required, rules.amount]">
+                                                                <v-icon slot="prepend" color="green">mdi-currency-usd
+                                                                </v-icon>
+                                                            </v-text-field>
+                                                        </v-col>
+                                                        <v-btn small @click="sendTestAmount" color="blue">
+                                                            Test
+                                                            <v-icon small class="ml-1">
+                                                                mdi-play-circle-outline
+                                                            </v-icon>
+                                                        </v-btn>
+                                                    </v-row>
+                                                </v-form>
+                                            </v-container>
+                                        </v-expansion-panel-content>
+                                    </v-expansion-panel>
+                                    <v-expansion-panel>
+                                        <v-expansion-panel-header>
+                                            <v-row>
+                                                <v-col cols="auto">
+                                                    <v-switch class="ma-0 pa-0" v-model="enableRewards"
+                                                              @click="stopPropagation" dense hide-details
+                                                              label="Rewards"></v-switch>
+                                                </v-col>
+                                            </v-row>
+                                        </v-expansion-panel-header>
+                                        <v-expansion-panel-content class="rewards">
+                                            When enabled, this will send a claimed reward ID to the Twitch chat.
+                                            <span class="example">R123456</span>
+                                            <v-simple-table inset>
+                                                <template v-slot:default>
+                                                    <thead>
+                                                    <tr>
+                                                        <th class="text-left">
+                                                            Amount
+                                                        </th>
+                                                        <th class="text-left">
+                                                            Reward Name
+                                                        </th>
+                                                        <th class="text-right">
+                                                            Reward ID
+                                                        </th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    <tr v-for="(reward) in rewards" :key="reward.id">
+                                                        <td>${{ reward.amount }}</td>
+                                                        <td>
+                                                            <v-container full-height>
+                                                                <v-row align="center">
+                                                                    <img v-if="reward.image.src"
+                                                                         class="reward-image mr-2"
+                                                                         :src="reward.image.src"
+                                                                         :alt="reward.image.alt">
+                                                                    <span>{{ reward.name }}</span>
+                                                                </v-row>
+                                                            </v-container>
+                                                        </td>
+                                                        <td class="text-right">
+                                                            {{ reward.id }}
+                                                            <v-icon small @click="copyToClipboard(reward.id)"
+                                                                    class="mx-1">
+                                                                mdi-clipboard-multiple-outline
+                                                            </v-icon>
+                                                            <v-icon small @click="sendReward(reward.id)">
+                                                                mdi-play-circle-outline
+                                                            </v-icon>
+                                                        </td>
+                                                    </tr>
+                                                    </tbody>
+                                                </template>
+                                            </v-simple-table>
+                                        </v-expansion-panel-content>
+                                    </v-expansion-panel>
+                                </v-expansion-panels>
+                            </v-row>
+                        </v-container>
+                    </v-card-text>
+                </v-card>
+            </v-dialog>
+            <v-dialog v-model="twitchDialog" max-width="720">
+                <v-card>
+                    <v-card-title>
+                        Twitch Settings
+                        <v-progress-circular
+                                v-if="progress"
+                                indeterminate
+                                color="primary"
+                                class="ml-2"
+                                size="24"
+                                width="2"
+                        ></v-progress-circular>
+                    </v-card-title>
+                    <v-card-text>
+                        <v-container>
+                            <v-row>
+                                <v-col cols="6">
+                                    <v-text-field v-model="twitchName" label="Twitch Login" persistent-hint
+                                                  hint="Alter the OAuth token in the config file to change who sends the messages to Twitch."
+                                                  readonly disabled></v-text-field>
+                                </v-col>
+                                <v-col>
+                                    <v-text-field v-model="twitchChannel" label="Twitch Channel"
+                                                  hint="The channel you want to send messages to."></v-text-field>
+                                </v-col>
+                            </v-row>
+                            <v-row>
+                                <v-spacer></v-spacer>
+                                <v-btn small class="mr-2" @click="twitchConnect" color="green">
+                                    Connect
+                                </v-btn>
+                                <v-btn small class="mr-2" @click="twitchDisconnect" color="red">
+                                    Disconnect
+                                </v-btn>
+                                <v-btn small @click="sendTmi('Tiltify Test Message')" color="blue">
+                                    Test
+                                    <v-icon small class="ml-1">mdi-email-send-outline</v-icon>
+                                </v-btn>
+                            </v-row>
+                        </v-container>
+                    </v-card-text>
+                </v-card>
+            </v-dialog>
+        </v-main>
+    </v-app>
+</div>
+</body>
+</html>
+<script src="./config.js"></script>
+<script src="./scripts/tmi.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@2.4.0/build/global/luxon.min.js"></script>
+<script>
+    const DateTime = luxon.DateTime;
+    let socket;
+    const prevDonationsCount = 25;
+    let heartbeatTimer = null;
+    let reconnectTimer = null;
+    let reconnecting = false;
+    let tmi;
+    const notification = new Audio('notification.mp3');
+    let idleTimeout;
+
+    Vue.config.devtools = true
+    new Vue({
+        el: '#app',
+        vuetify: new Vuetify({
+            theme: {dark: true},
+        }),
+
+        data() {
+            return {
+                now: new Date().valueOf(),
+                tiltifyName: null,
+                campaignId: null,
+                campaignName: null,
+                tiltifyDialog: false,
+                twitchDialog: false,
+                tiltifyConnected: false,
+                twitchConnected: false,
+                twitchName: null,
+                twitchChannel: null,
+                twitchToken: null,
+                mute: true,
+                rewards: [],
+                items: [],
+                enableRewards: false,
+                enableIncentives: false,
+                testAmount: null,
+                raised: 0,
+                goal: 0,
+                progress: false,
+                rules: {
+                    required: (val) => {
+                        return !!val || "Required";
+                    },
+                    amount: (val) => {
+                        return /^[1-9]\d*(.\d{2})?$/.test(val) || "Invalid Number";
+                    },
+                },
+            }
+        },
+
+        computed: {
+            sortedItems() {
+                return [...this.items].sort((a, b) => b.completedAt - a.completedAt);
+            },
+            raisedPercent() {
+                if (!this.raised || !this.goal) return 0;
+                return this.raised / this.goal * 100;
+            },
+            tiltifyButtonColor() {
+                if (!this.tiltifyConnected) return 'red';
+                if (!this.enableRewards && !this.enableIncentives) return 'orange';
+                return 'green';
+            }
+        },
+
+        watch: {
+            items() {
+                if (this.items.length > 200) this.items.pop();
+            },
+            enableRewards(val) {
+                localStorage.setItem('rewards_enabled', val);
+            },
+            enableIncentives(val) {
+                localStorage.setItem('incentives_enabled', val);
+            }
+        },
+
+        mounted() {
+            document.addEventListener("click", this.resetIdleTimer);
+            document.addEventListener("keypress", this.resetIdleTimer);
+            document.addEventListener("scroll", this.resetIdleTimer);
+            document.addEventListener("mouseover", this.resetIdleTimer);
+            setInterval(() => {
+                this.now = new Date().valueOf();
+            }, 1000 * 15)
+            this.mute = localStorage.getItem('mute') === 'true';
+            if (!tiltifyToken || !twitchToken) {
+                console.error('MISSING CREDENTIALS IN THE CONFIG.JS FILE');
+                return;
+            }
+            this.tiltify();
+            this.twitch();
+        },
+
+        methods: {
+            async tiltify() {
+                this.campaignId = localStorage.getItem('campaign_id');
+                this.tiltifyName = localStorage.getItem('tiltify_name');
+                this.campaignName = localStorage.getItem('campaign_name');
+                this.enableRewards = localStorage.getItem('rewards_enabled') === 'true';
+                this.enableIncentives = localStorage.getItem('incentives_enabled') === 'true';
+                if (this.campaignId && this.tiltifyName) {
+                    await this.getCampaign();
+                    await this.getRewards();
+                    await this.getDonations();
+                    this.socketConnect();
+                }
+            },
+
+            async twitch() {
+                const tokenData = await this.validateTwitchToken();
+                this.twitchName = tokenData.login;
+                this.twitchChannel = localStorage.getItem('twitch_channel');
+                if (this.twitchChannel && twitchToken) {
+                    this.twitchConnect();
+                }
+            },
+
+            clear(item) {
+                if (item.cleared) return;
+                item.cleared = true;
+                const prevCleared = JSON.parse(localStorage.getItem('cleared_ids') || "[]");
+                prevCleared.unshift(item.id);
+                if (prevCleared.length > prevDonationsCount) prevCleared.pop();
+                localStorage.setItem('cleared_ids', JSON.stringify(prevCleared));
+                // TODO: send websocket message to other clients
+            },
+
+            clearAll() {
+                this.items.forEach(x => x.cleared = true);
+                const prevCleared = [...this.items].slice(0, 25).map(x => x.id);
+                localStorage.setItem('cleared_ids', JSON.stringify(prevCleared));
+            },
+
+            async search() {
+                this.progress = true;
+                const user = await axios.get(`https://tiltify.com/api/v3/users/${this.tiltifyName.toLowerCase()}`).then(({data}) => data.data);
+                const campaigns = await axios.get(`https://tiltify.com/api/v3/users/${user.id}/campaigns`).then(({data}) => data.data);
+                const sortedCampaign = [...campaigns].sort((a, b) => {
+                    return b.startsAt - a.startsAt;
+                });
+                this.tiltifyName = user.username;
+                this.campaignId = sortedCampaign[0].id;
+                this.campaignName = sortedCampaign[0].name;
+                localStorage.setItem('tiltify_name', this.tiltifyName);
+                localStorage.setItem('campaign_id', this.campaignId);
+                localStorage.setItem('campaign_name', this.campaignName);
+                await this.getCampaign();
+                await this.getRewards();
+                this.socketConnect();
+            },
+
+            async getCampaign() {
+                await axios.get(`https://tiltify.com/api/v3/campaigns/${this.campaignId}`, {
+                    headers: {
+                        authorization: `Bearer ${tiltifyToken}`
+                    },
+                }).then(({data}) => {
+                    this.goal = data.data.fundraiserGoalAmount;
+                    this.raised = data.data.amountRaised;
+                });
+            },
+
+            async getRewards() {
+                await axios.get(`https://tiltify.com/api/v3/campaigns/${this.campaignId}/rewards`, {
+                    headers: {
+                        authorization: `Bearer ${tiltifyToken}`
+                    },
+                }).then(({data}) => {
+                    this.rewards = data.data.sort((a, b) => {
+                        return a.amount - b.amount;
+                    });
+                });
+            },
+
+            getReward(id) {
+                if (!id) return null;
+                return this.rewards.find(x => x.id === id);
+            },
+
+            async getDonations() {
+                await axios.get(`https://tiltify.com/api/v3/campaigns/${this.campaignId}/donations?count=${prevDonationsCount}`, {
+                    headers: {
+                        authorization: `Bearer ${tiltifyToken}`,
+                    },
+                }).then(({data}) => {
+                    const prevCleared = JSON.parse(localStorage.getItem('cleared_ids') || "[]");
+                    data.data.forEach(x => {
+                        const match = this.items.find(y => y.id === x.id);
+                        if (match) return;
+                        const item = {
+                            ...x,
+                            reward: this.getReward(x.rewardId),
+                            cleared: prevCleared.includes(x.id),
+                        };
+                        this.items.push(item);
+                    })
+                })
+            },
+
+            validateTwitchToken() {
+                const index = twitchToken.indexOf(':');
+                const token = twitchToken.substring(index + 1);
+                return axios.get('https://id.twitch.tv/oauth2/validate', {
+                    headers: {
+                        authorization: `OAuth ${token}`,
+                    },
+                }).then(({data}) => data);
+            },
+
+            socketConnect() {
+                let count = 17;
+                const id = this.campaignId;
+
+                if (socket) {
+                    if (heartbeatTimer) clearInterval(heartbeatTimer);
+                    if (socket.readyState === 0 || socket.readyState === 1) {
+                        reconnecting = true;
+                        socket.close();
+                    }
+                }
+                socket = new WebSocket('wss://websockets.tiltify.com/socket/websocket?vsn=2.0.0')
+                socket.addEventListener('open', (event) => {
+                    console.log('Connected to WS server');
+                    // if (reconnectTimer) clearInterval(reconnectTimer)
+                    this.progress = false;
+                    this.tiltifyConnected = true;
+                    reconnecting = false;
+                    socket.send(JSON.stringify(["15", "15", `campaign.${id}.campaign`, "phx_join", {}]));
+                    socket.send(JSON.stringify(["17", "17", `campaign.${id}.donation`, "phx_join", {}]));
+                    heartbeatTimer = setInterval(() => {
+                        count++;
+                        socket.send(JSON.stringify([null, count.toString(), "phoenix", "heartbeat", {}]));
+                    }, 1000 * 30);
+                    this.getDonations();
+                });
+                socket.addEventListener('close', (event) => {
+                    console.log('Disconnected from WS server');
+                    this.tiltifyConnected = false;
+                    if (!reconnecting) {
+                        reconnectTimer = setTimeout(() => {
+                            this.socketConnect();
+                        }, 3000);
+                    }
+                });
+                socket.addEventListener('message', (event) => {
+                    const [, nonce, , type, payload] = JSON.parse(event.data);
+                    if (nonce) return;
+                    console.log('Message from server ', event.data);
+                    if (type === 'donation' && payload) {
+                        const duplicate = this.items.find(x => {
+                            return x.amount === payload.amount &&
+                                x.name === payload.name &&
+                                x.completedAt === payload.completedAt;
+                        })
+                        if (duplicate) return;
+
+                        const rewardId = payload.reward_id;
+                        this.sendAmount(payload.amount);
+                        if (rewardId) {
+                            this.sendReward(rewardId);
+                        }
+                        const item = {
+                            ...payload,
+                            reward: this.getReward(rewardId),
+                            cleared: false,
+                        };
+                        this.items.unshift(item);
+                        if (!this.mute) {
+                            notification.play();
+                        }
+                    } else if (type === 'campaign' && payload) {
+                        this.raised = payload.amountRaised;
+                        this.goal = payload.fundraiserGoalAmount;
+                    }
+                });
+            },
+
+            twitchConnect() {
+                this.progress = true;
+                localStorage.setItem('twitch_channel', this.twitchChannel);
+
+                if (tmi) {
+                    tmi.disconnect();
+                }
+                tmi = new window.tmi.Client({
+                    identity: {
+                        username: this.twitchName,
+                        password: twitchToken,
+                    },
+                    channels: [this.twitchChannel],
+                    options: {skipUpdatingEmotesets: true},
+                });
+
+
+                tmi.on('connected', () => {
+                    console.log('Connected to Twitch Chat');
+                    this.twitchConnected = true;
+                });
+                tmi.on('disconnected', () => {
+                    console.log('Disconnected from Twitch Chat');
+                    this.twitchConnected = false;
+                });
+
+                tmi.connect().then(() => {
+                    this.progress = false;
+                });
+            },
+
+            twitchDisconnect() {
+                if (tmi && tmi.readyState() === 'OPEN') {
+                    tmi.disconnect();
+                    tmi = null;
+                }
+            },
+
+            sendReward(id) {
+                if (!this.enableRewards) return;
+                const reward = this.getReward(id);
+                if (!reward) return;
+                this.sendTmi(`R${reward.id}`);
+            },
+
+            sendAmount(amount) {
+                if (!this.enableIncentives) return;
+                this.sendTmi(`$${amount}`);
+            },
+
+            sendTmi(message) {
+                if (tmi && tmi.readyState() === 'OPEN') {
+                    console.log("SENDING: ", message);
+                    tmi.say(this.twitchChannel, message.toString());
+                }
+            },
+
+            toggleMute() {
+                this.mute = !this.mute;
+                localStorage.setItem('mute', this.mute);
+            },
+
+            copyToClipboard(text) {
+                navigator.clipboard.writeText(text);
+            },
+
+            formattedAmount(value) {
+                if (value % 1 !== 0) {
+                    return value.toFixed(2);
+                } else {
+                    return value;
+                }
+            },
+
+            dateFormatted(item) {
+                const diff = this.now - new Date(item.completedAt).valueOf();
+                const minutes = Math.floor(diff / 1000 / 60);
+                if (minutes <= 0) return 'Less than a minute ago';
+                if (minutes === 1) return '1 minute ago';
+                if (minutes < 60) return `${minutes} minutes ago`;
+                const hours = Math.floor(minutes / 60);
+                if (hours === 1) return '1 hour ago';
+                if (hours < 24) return `${hours} hours ago`;
+                return DateTime.fromMillis(item.completedAt).toLocaleString(DateTime.DATETIME_SHORT)
+            },
+
+            resetIdleTimer() {
+                if (idleTimeout) clearTimeout(idleTimeout);
+                idleTimeout = setTimeout(() => {
+                    console.log('Scrolling to Top');
+                    this.scrollToTop();
+                }, 30000);
+            },
+
+            scrollToTop() {
+                this.$vuetify.goTo(0, {
+                    duration: 300,
+                    offset: 0,
+                    easing: 'easeInOutCubic',
+                });
+            },
+
+            stopPropagation(e) {
+                e.stopPropagation();
+            },
+
+            sendTestAmount() {
+                if (!this.$refs.testIncentive.validate()) return;
+                this.sendAmount(this.testAmount);
+            },
+
+            resendAmount(e, amount) {
+                this.stopPropagation(e);
+                this.sendAmount(amount);
+            },
+
+            resendReward(e, id) {
+                this.stopPropagation(e);
+                this.sendReward(id);
+            },
+        }
+    });
+</script>
+
+
+//
