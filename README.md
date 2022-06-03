@@ -1,6 +1,6 @@
-#Tiltify Bitbot GUI
+# Tiltify Bitbot GUI
 
-####A standalone desktop webpage to bridge Tiltify and Bitbot by use of Twitch chat. 
+#### A standalone desktop webpage to bridge Tiltify and Bitbot by use of Twitch chat. 
 
 Download and extract files and rename ``config-example.js`` to ``config.js``. Then retrieve and enter the Tiltify Access Token and Twitch Chat OAuth Token.js
 
