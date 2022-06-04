@@ -28,6 +28,8 @@ The Tiltify and Twitch settings button colors signify the connection status.
   * This is best as a temporary or throwaway channel that other people are not going to notice or see.
 * Click connect. Once connected the Twitch settings button will turn green.
 * Click the Test button to ensure messages come through to the selected Twitch channel.
+* You are able to set an optional prefix that will prepend any messages sent to the temp Twitch chat.
+* If using the optional websockets (see below) you can toggle whether other clients are able to send message replays.
 
 ### Tiltify Settings
 * Click on the ``Tiltify`` settings button in the upper right and enter the Tiltify username for the campaign you want to follow.
