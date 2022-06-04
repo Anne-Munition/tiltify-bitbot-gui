@@ -882,11 +882,13 @@
             resendAmount(e, amount) {
                 this.stopPropagation(e);
                 this.sendAmount(amount);
+                this.emitReplay(`$${amount}`)
             },
 
             resendReward(e, id) {
                 this.stopPropagation(e);
                 this.sendReward(id);
+                this.emitReplay(`R${id}`)
             },
 
             sendCustom() {
@@ -919,11 +921,21 @@
                         this.clear(item, true);
                     }
                 })
+                clearWs.on('tiltify_replay', data => {
+                    if (debug) console.log(`REPLAYING ITEM FROM OTHER USER - ${data}`);
+                    this.sendTmi(data);
+                })
             },
 
             emitClear(id) {
                 if (clearWs && clearWs.connected) {
                     clearWs.emit('tiltify_clear', id);
+                }
+            },
+
+            emitReplay(amount) {
+                if (clearWs && clearWs.connected) {
+                    clearWs.emit('tiltify_replay', amount);
                 }
             },
 
