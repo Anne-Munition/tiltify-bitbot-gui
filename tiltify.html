@@ -108,6 +108,11 @@
         font-size: 1.0em;
         font-weight: bold;
     }
+
+    .glow {
+        text-shadow: 0 0 3px #000,
+        0 0 10px #f9d71a
+    }
 </style>
 <body>
 <div id="app" v-cloak>
@@ -115,7 +120,7 @@
         <v-main>
             <v-app-bar static app>
                 <v-row class="d-flex justify-space-between" align="center">
-                    <div class="logo ml-3" >
+                    <div class="logo ml-3">
                         <a :href="campaignUrl" v-if="campaignUrl" target="_blank">
                             <img src="./logo.png" alt="">
                         </a>
@@ -176,7 +181,8 @@
                              @click="clear(item)">
                             <v-row no-gutters align="center">
                                 <span class="name">{{ item.name }}&nbsp;</span>
-                                <span class="amount">${{ formattedAmount(item.amount)}}</span>
+                                <span class="amount"
+                                      :class="{glow: glow(item.amount)}">${{ formattedAmount(item.amount)}}</span>
 
                                 <v-icon small @click="resendAmount($event, item.amount)" class="ml-1 resend-amount">
                                     mdi-refresh
@@ -261,18 +267,37 @@
                                             <v-container>
                                                 <v-form ref="testIncentive">
                                                     <v-row align="center">
-                                                        <v-col cols="4">
-
+                                                        <v-col cols="6">
+                                                            <v-text-field :rules="[rules.amount]"
+                                                                          v-model="glowThreshold"
+                                                                          label="Highlight Threshold"
+                                                                          hint="Minimum amount to highlight the donation amounts, if enabled."
+                                                                          @change="changedGlowThreshold"
+                                                                          clearable
+                                                            >
+                                                                <v-icon slot="prepend" color="green">mdi-currency-usd
+                                                                </v-icon>
+                                                            </v-text-field>
+                                                        </v-col>
+                                                        <v-switch v-model="glowEnabled" class="ma-0 pa-0 ml-2" dense
+                                                                  hide-details>
+                                                        </v-switch>
+                                                    </v-row>
+                                                    <v-row align="center">
+                                                        <v-col cols="6">
                                                             <v-text-field v-model="testAmount"
                                                                           label="Amount"
-                                                                          :rules="[rules.required, rules.amount]">
+                                                                          :rules="[rules.amount]"
+                                                                          hint="Test Send a donation amount to Twitch chat, if connected."
+                                                                          clearable
+                                                            >
                                                                 <v-icon slot="prepend" color="green">mdi-currency-usd
                                                                 </v-icon>
                                                             </v-text-field>
                                                         </v-col>
                                                         <v-btn small @click="sendTestAmount" color="blue">
                                                             Test
-                                                            <v-icon small class="ml-1">
+                                                            <v-icon small class="ml-2">
                                                                 mdi-play-circle-outline
                                                             </v-icon>
                                                         </v-btn>
@@ -414,6 +439,7 @@
     const notification = new Audio('notification.mp3');
     let idleTimeout;
     let clearWs;
+    const amountRegex = /^[1-9]\d*(.\d{2})?$/;
 
     Vue.component('animated-number', {
         template: "<span>${{formattedNumber}}</span>",
@@ -486,12 +512,14 @@
                 loadingSpinner: false,
                 tiltifyUrl: null,
                 campaignSlug: null,
+                glowEnabled: false,
+                glowThreshold: 50,
                 rules: {
                     required: (val) => {
                         return !!val || "Required";
                     },
                     amount: (val) => {
-                        return /^[1-9]\d*(.\d{2})?$/.test(val) || "Invalid Number";
+                        return !val || amountRegex.test(val) || "Invalid Number";
                     },
                 },
             }
@@ -525,6 +553,9 @@
             },
             enableIncentives(val) {
                 localStorage.setItem('incentives_enabled', val);
+            },
+            glowEnabled(val) {
+                localStorage.setItem('glow_enabled', val);
             }
         },
 
@@ -554,6 +585,9 @@
                 this.campaignSlug = localStorage.getItem('campaign_slug');
                 this.enableRewards = localStorage.getItem('rewards_enabled') === 'true';
                 this.enableIncentives = localStorage.getItem('incentives_enabled') === 'true';
+                this.glowEnabled = localStorage.getItem('glow_enabled') === 'true';
+                const glowThreshold = localStorage.getItem('glow_threshold');
+                if (glowThreshold) this.glowThreshold = parseInt(glowThreshold);
                 if (this.campaignId && this.tiltifyName) {
                     await this.getCampaign();
                     await this.getRewards();
@@ -893,6 +927,18 @@
                 if (clearWs && clearWs.connected) {
                     clearWs.emit('tiltify_clear', 'all');
                 }
+            },
+
+            glow(amount) {
+                if (!this.glowEnabled || !this.glowThreshold) return false
+                return amount >= this.glowThreshold;
+            },
+
+            changedGlowThreshold(val) {
+                if (!amountRegex.test(val)) {
+                    return;
+                }
+                localStorage.setItem('glow_threshold', val);
             },
         }
     });
