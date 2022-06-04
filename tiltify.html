@@ -79,7 +79,7 @@
     }
 
     .theme--dark.v-divider {
-        border-color: hsla(0, 0%, 100%, .25);
+        background-color: #444;
     }
 
     .example {
@@ -323,8 +323,7 @@
                                         <v-expansion-panel-content class="rewards" color="#333">
                                             With Rewards enabled, a claimed reward ID will be sent to the Twitch chat.
                                             <span class="example">R123456</span>
-                                            <v-divider class="mt-4"></v-divider>
-                                            <v-simple-table inset color="#393939">
+                                            <v-simple-table inset color="#393939" class="mt-4">
                                                 <template v-slot:default>
                                                     <thead>
                                                     <tr>
