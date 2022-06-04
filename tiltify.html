@@ -265,8 +265,8 @@
                                             <span class="example">$10</span>
                                             <v-container>
                                                 <v-form ref="testIncentive">
-                                                    <v-row align="center">
-                                                        <v-col cols="6">
+                                                    <v-row align="center" no-gutters>
+                                                        <v-col cols="8">
                                                             <v-text-field :rules="[rules.amount]"
                                                                           v-model="glowThreshold"
                                                                           label="Highlight Threshold"
@@ -278,12 +278,12 @@
                                                                 </v-icon>
                                                             </v-text-field>
                                                         </v-col>
-                                                        <v-switch v-model="glowEnabled" class="ma-0 pa-0 ml-2" dense
+                                                        <v-switch v-model="glowEnabled" class="ma-0 pa-0 ml-4" dense
                                                                   hide-details>
                                                         </v-switch>
                                                     </v-row>
-                                                    <v-row align="center">
-                                                        <v-col cols="6">
+                                                    <v-row align="center" no-gutters>
+                                                        <v-col cols="8">
                                                             <v-text-field v-model="testAmount"
                                                                           label="Amount"
                                                                           :rules="[rules.amount]"
@@ -294,7 +294,7 @@
                                                                 </v-icon>
                                                             </v-text-field>
                                                         </v-col>
-                                                        <v-btn small @click="sendTestAmount" color="blue">
+                                                        <v-btn small @click="sendTestAmount" color="blue" class="ml-4">
                                                             Test
                                                             <v-icon small class="ml-2">
                                                                 mdi-play-circle-outline
