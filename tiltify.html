@@ -117,6 +117,10 @@
     .theme--dark.v-data-table {
         background-color: #444;
     }
+
+    .v-messages__message {
+        hyphens: none;
+    }
 </style>
 <body>
 <div id="app" v-cloak>
@@ -401,26 +405,36 @@
                                 </v-col>
                             </v-row>
                             <v-row>
-                                <v-col cols="4">
-                                    <v-text-field clearable v-model="twitchPrefix" label="Message Prefix" hint="Optional prefix to prepend to all Twitch chat messages.">
+                                <v-col cols="6">
+                                    <v-text-field clearable v-model="twitchPrefix" label="Message Prefix"
+                                                  hint="Optional prefix to prepend to all Twitch chat messages.">
                                     </v-text-field>
                                 </v-col>
-                            </v-row>
-                            <v-row>
                                 <v-spacer></v-spacer>
-                                <v-btn small class="mr-2" @click="twitchConnect" color="green">
-                                    Connect
-                                </v-btn>
-                                <v-btn small class="mr-2" @click="twitchDisconnect" color="red">
-                                    Disconnect
-                                </v-btn>
-                                <v-btn small @click="sendTmi('Tiltify-BitBot Test Message')" color="blue">
-                                    Test
-                                    <v-icon small class="ml-1">mdi-email-send-outline</v-icon>
-                                </v-btn>
+                                <v-col cols="6">
+                                    <v-switch dense v-model="altClientReplays" label="Alternate Client Replays"
+                                              hint="Allow Twitch message replays from other connected clients if using websockets."
+                                              persistent-hint>
+                                    </v-switch>
+                                </v-col>
                             </v-row>
                         </v-container>
                     </v-card-text>
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <div class="mb-2">
+                            <v-btn small class="mr-1" @click="twitchConnect" color="green">
+                                Connect
+                            </v-btn>
+                            <v-btn small class="mr-1" @click="twitchDisconnect" color="red">
+                                Disconnect
+                            </v-btn>
+                            <v-btn small @click="sendTmi('Tiltify-BitBot Test Message')" color="blue">
+                                Test
+                                <v-icon small class="ml-1">mdi-email-send-outline</v-icon>
+                            </v-btn>
+                        </div>
+                    </v-card-actions>
                 </v-card>
             </v-dialog>
         </v-main>
@@ -524,6 +538,7 @@
                 raised: 0,
                 goal: 0,
                 loadingSpinner: false,
+                altClientReplays: false,
                 rules: {
                     required: (val) => {
                         return !!val || "Required";
@@ -572,6 +587,9 @@
             },
             twitchPrefix(val) {
                 localStorage.setItem('twitch_prefix', val);
+            },
+            altClientReplays(val) {
+                localStorage.setItem('alt_client_replays', val);
             }
         },
 
@@ -584,6 +602,7 @@
                 this.now = new Date().valueOf();
             }, 1000 * 15)
             this.mute = localStorage.getItem('mute') === 'true';
+            this.altClientReplays = localStorage.getItem('alt_client_replays') === 'true';
             if (!tiltifyToken || tiltifyToken === '123456789' || !twitchToken || twitchToken === 'oauth:123456789') {
                 console.warn('MUST SET CREDENTIALS IN THE CONFIG.JS FILE');
                 return;
@@ -934,6 +953,7 @@
                     }
                 })
                 clearWs.on('tiltify_replay', data => {
+                    if (!this.altClientReplays) return;
                     if (debug) console.log(`REPLAYING ITEM FROM OTHER USER - ${data}`);
                     this.sendTmi(data);
                 })
