@@ -51,14 +51,20 @@ The Tiltify and Twitch settings button colors signify the connection status.
     * Click the play icon to test send the reward to the temp Twitch chat.
     
 ### Optional Websocket Client Syncing
-Websockets can be used to sync multiple clients as to what donations have been cleared/acknowledged.
-This way a streamer can work in tandem with a donation reader or other persons, and all are aware what donations have already been read out.
-If you have a Socket.IO websocket 3.x or 4.x server, echo the data from a 'tiltify_clear' message.
+* Websockets can be used to sync multiple clients as to what donations have been cleared/acknowledged, and even resent events to the temp Twitch chat.
+* This way a streamer can work in tandem with a donation reader or other persons, and all are aware what donations have already been read out.
+* If you have a Socket.IO websocket 3.x or 4.x server, echo the data from a 'tiltify_clear' and ``tiltify_replay`` message.
 
 Example:
 ```js
 socket.on('tiltify_clear', (data) => {
   socket.broadcast.emit('tiltify_clear', data)
 })
+
+socket.on('tiltify_replay', (data) => {
+  socket.broadcast.emit('tiltify_replay', data)
+})
 ```
-The websocket URL will need to be added to the ``config.js`` file.
+* The websocket URL will need to be added to the ``config.js`` file.
+* Ensure that only the MAIN client (streamer) is connected to the temp Twitch chat. Otherwise, donations will be posted multiple times (once from each client).
+* The alternate clients can connect to a different Twitch chat if they like.
