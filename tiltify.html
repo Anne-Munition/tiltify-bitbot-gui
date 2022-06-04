@@ -233,8 +233,11 @@
                             <v-icon v-if="!mute">mdi-volume-high</v-icon>
                             <v-icon v-else>mdi-volume-mute</v-icon>
                         </v-btn>
-                        <v-btn small @click="search" color="blue" title="Reload Campaign">
+                        <v-btn small class="mr-2" @click="search" color="blue" title="Reload Campaign">
                             <v-icon class="ml-1">mdi-refresh</v-icon>
+                        </v-btn>
+                        <v-btn small @click="socketDisconnect" color="red">
+                            Disconnect
                         </v-btn>
                     </v-card-title>
                     <v-card-text>
@@ -745,9 +748,7 @@
             socketConnect() {
                 let count = 17;
                 const id = this.campaignId;
-                if (socket && (socket.readyState === 0 || socket.readyState === 1)) {
-                    socket.close();
-                }
+                this.socketDisconnect();
                 socket = new ReconnectingWebSocket('wss://websockets.tiltify.com/socket/websocket?vsn=2.0.0')
                 socket.addEventListener('open', (event) => {
                     console.log('Connected to Tiltify WS server');
@@ -791,6 +792,12 @@
                         this.goal = payload.fundraiserGoalAmount;
                     }
                 });
+            },
+
+            socketDisconnect() {
+                if (socket && (socket.readyState === 0 || socket.readyState === 1)) {
+                    socket.close();
+                }
             },
 
             twitchConnect() {
