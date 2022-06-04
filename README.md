@@ -17,8 +17,8 @@ The Tiltify and Twitch settings button colors signify the connection status.
 ### Misc
 * New donations will appear with a purple background.
 * Click on the purple donation to "Clear" the donation/background. This will help you keep track of what donations have been acknowledged.
-* Click on the blue ``Clear`` button in the upper right to clear all donations.
-* The purple icon is used to set a custom BitBot action. Use it for anything you can think of. It will post ``Custom`` in the temp Twitch chat.
+* Click on the blue ``Clear`` icon in the upper right to clear all donations.
+* The blue icon with the arrows is used to set a custom BitBot action. Use it for anything you can think of. It will post ``Custom`` in the temp Twitch chat.
 * The campaign progress bar will fill with a green color. If the goal is reached or exceeded, it will change to a striped orange color.
 * The ``Raised`` and ``Goal`` campaign amounts are updated in realtime.
 * Donations/rewards can be replayed by pressing the replay icon. This will resend the message to the temp Twitch chat. 
@@ -42,6 +42,7 @@ The Tiltify and Twitch settings button colors signify the connection status.
 
  * INCENTIVES
     * All donation amounts will be posted to the temp Twitch chat. Example: ``$10``
+    * You can set an amount threshold to make a glow appear around certain donation amounts. This is used to make those larger donations stand out of the crowd.
     * Enter an amount and click the ``Test`` button to send the amount to the temp Twitch chat to trigger BitBot.
   * REWARDS
     * If rewards are available they will populate in the table.
