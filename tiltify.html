@@ -196,8 +196,8 @@
                             <div class="message">
                                 {{ item.comment }}
                             </div>
-                            <v-divider class="my-2" v-if="item.reward && enableRewards"></v-divider>
-                            <v-container fill-height v-if="item.reward && enableRewards" class="reward">
+                            <v-divider class="my-2" v-if="item.reward && rewardsEnabled"></v-divider>
+                            <v-container fill-height v-if="item.reward && rewardsEnabled" class="reward">
                                 <v-row align="center">
                                     <img :src="item.reward.image.src" :alt="item.reward.image.alt"
                                          class="reward-image mr-2">
@@ -225,11 +225,11 @@
                                 width="2"
                         ></v-progress-circular>
                         <v-spacer></v-spacer>
-                        <v-btn small @click="toggleMute" class="mr-2" color=purple>
+                        <v-btn small @click="toggleMute" class="mr-2" color=purple title="Toggle Notification Sound">
                             <v-icon v-if="!mute">mdi-volume-high</v-icon>
                             <v-icon v-else>mdi-volume-mute</v-icon>
                         </v-btn>
-                        <v-btn small @click="search" color="blue-grey lighten-1">
+                        <v-btn small @click="search" color="blue" title="Reload Campaign">
                             <v-icon class="ml-1">mdi-refresh</v-icon>
                         </v-btn>
                     </v-card-title>
@@ -258,7 +258,7 @@
                                         <v-expansion-panel-header color="#333">
                                             <v-row>
                                                 <v-col cols="auto">
-                                                    <v-switch class="ma-0 pa-0" v-model="enableIncentives"
+                                                    <v-switch class="ma-0 pa-0" v-model="incentivesEnabled"
                                                               @click="stopPropagation" dense hide-details
                                                               label="Incentives"></v-switch>
                                                 </v-col>
@@ -266,7 +266,7 @@
                                         </v-expansion-panel-header>
                                         <v-expansion-panel-content color="#333">
                                             With Incentives enabled, ALL donations will be sent to the Twitch chat.
-                                            <span class="example">$10</span>
+                                            <span class="example">{{prefix}}$10</span>
                                             <v-divider class="mt-4"></v-divider>
                                             <v-container>
                                                 <v-form ref="testIncentive">
@@ -275,7 +275,7 @@
                                                             <v-text-field :rules="[rules.amount]"
                                                                           v-model="glowThreshold"
                                                                           label="Highlight Threshold"
-                                                                          hint="Minimum amount to highlight the donation amounts, if enabled."
+                                                                          hint="Minimum amount to highlight donation amounts, if enabled."
                                                                           @change="changedGlowThreshold"
                                                                           clearable
                                                             >
@@ -314,7 +314,7 @@
                                         <v-expansion-panel-header color="#333">
                                             <v-row>
                                                 <v-col cols="auto">
-                                                    <v-switch class="ma-0 pa-0" v-model="enableRewards"
+                                                    <v-switch class="ma-0 pa-0" v-model="rewardsEnabled"
                                                               @click="stopPropagation" dense hide-details
                                                               label="Rewards"></v-switch>
                                                 </v-col>
@@ -322,7 +322,7 @@
                                         </v-expansion-panel-header>
                                         <v-expansion-panel-content class="rewards" color="#333">
                                             With Rewards enabled, a claimed reward ID will be sent to the Twitch chat.
-                                            <span class="example">R123456</span>
+                                            <span class="example">{{prefix}}R123456</span>
                                             <v-simple-table inset color="#393939" class="mt-4">
                                                 <template v-slot:default>
                                                     <thead>
@@ -396,8 +396,14 @@
                                                   readonly disabled></v-text-field>
                                 </v-col>
                                 <v-col>
-                                    <v-text-field v-model="twitchChannel" label="Twitch Channel"
+                                    <v-text-field clearable v-model="twitchChannel" label="Twitch Channel"
                                                   hint="The channel you want to send messages to."></v-text-field>
+                                </v-col>
+                            </v-row>
+                            <v-row>
+                                <v-col cols="4">
+                                    <v-text-field clearable v-model="twitchPrefix" label="Message Prefix" hint="Optional prefix to prepend to all Twitch chat messages.">
+                                    </v-text-field>
                                 </v-col>
                             </v-row>
                             <v-row>
@@ -496,28 +502,28 @@
             return {
                 now: new Date().valueOf(),
                 tiltifyName: null,
+                tiltifyDialog: false,
+                tiltifyConnected: false,
+                tiltifyUrl: null,
                 campaignId: null,
                 campaignName: null,
-                tiltifyDialog: false,
-                twitchDialog: false,
-                tiltifyConnected: false,
-                twitchConnected: false,
+                campaignSlug: null,
                 twitchName: null,
                 twitchChannel: null,
-                twitchToken: null,
+                twitchDialog: false,
+                twitchConnected: false,
+                twitchPrefix: null,
                 mute: true,
                 rewards: [],
                 items: [],
-                enableRewards: false,
-                enableIncentives: false,
+                rewardsEnabled: false,
+                incentivesEnabled: false,
+                glowEnabled: false,
+                glowThreshold: 50,
                 testAmount: null,
                 raised: 0,
                 goal: 0,
                 loadingSpinner: false,
-                tiltifyUrl: null,
-                campaignSlug: null,
-                glowEnabled: false,
-                glowThreshold: 50,
                 rules: {
                     required: (val) => {
                         return !!val || "Required";
@@ -539,12 +545,15 @@
             },
             tiltifyButtonColor() {
                 if (!this.tiltifyConnected) return 'red';
-                if (!this.enableRewards && !this.enableIncentives) return 'orange';
+                if (!this.rewardsEnabled && !this.incentivesEnabled) return 'orange';
                 return 'green';
             },
             campaignUrl() {
                 if (!this.tiltifyUrl || !this.campaignSlug) return null;
                 return `${this.tiltifyUrl}/${this.campaignSlug}`
+            },
+            prefix() {
+                return this.twitchPrefix || '';
             }
         },
 
@@ -552,14 +561,17 @@
             items() {
                 if (this.items.length > 200) this.items.pop();
             },
-            enableRewards(val) {
+            rewardsEnabled(val) {
                 localStorage.setItem('rewards_enabled', val);
             },
-            enableIncentives(val) {
+            incentivesEnabled(val) {
                 localStorage.setItem('incentives_enabled', val);
             },
             glowEnabled(val) {
                 localStorage.setItem('glow_enabled', val);
+            },
+            twitchPrefix(val) {
+                localStorage.setItem('twitch_prefix', val);
             }
         },
 
@@ -572,8 +584,8 @@
                 this.now = new Date().valueOf();
             }, 1000 * 15)
             this.mute = localStorage.getItem('mute') === 'true';
-            if (!tiltifyToken || !twitchToken) {
-                console.error('MISSING CREDENTIALS IN THE CONFIG.JS FILE');
+            if (!tiltifyToken || tiltifyToken === '123456789' || !twitchToken || twitchToken === 'oauth:123456789') {
+                console.warn('MUST SET CREDENTIALS IN THE CONFIG.JS FILE');
                 return;
             }
             this.tiltify();
@@ -582,13 +594,13 @@
 
         methods: {
             async tiltify() {
-                this.campaignId = localStorage.getItem('campaign_id');
                 this.tiltifyName = localStorage.getItem('tiltify_name');
-                this.campaignName = localStorage.getItem('campaign_name');
                 this.tiltifyUrl = localStorage.getItem('tiltify_url');
+                this.campaignId = localStorage.getItem('campaign_id');
+                this.campaignName = localStorage.getItem('campaign_name');
                 this.campaignSlug = localStorage.getItem('campaign_slug');
-                this.enableRewards = localStorage.getItem('rewards_enabled') === 'true';
-                this.enableIncentives = localStorage.getItem('incentives_enabled') === 'true';
+                this.rewardsEnabled = localStorage.getItem('rewards_enabled') === 'true';
+                this.incentivesEnabled = localStorage.getItem('incentives_enabled') === 'true';
                 this.glowEnabled = localStorage.getItem('glow_enabled') === 'true';
                 const glowThreshold = localStorage.getItem('glow_threshold');
                 if (glowThreshold) this.glowThreshold = parseInt(glowThreshold);
@@ -604,6 +616,7 @@
                 const tokenData = await this.validateTwitchToken();
                 this.twitchName = tokenData.login;
                 this.twitchChannel = localStorage.getItem('twitch_channel');
+                this.twitchPrefix = JSON.parse(localStorage.getItem('twitch_prefix'));
                 if (this.twitchChannel && twitchToken) {
                     this.twitchConnect();
                 }
@@ -765,9 +778,7 @@
                 this.loadingSpinner = true;
                 localStorage.setItem('twitch_channel', this.twitchChannel);
 
-                if (tmi) {
-                    tmi.disconnect();
-                }
+                this.twitchDisconnect()
                 tmi = new window.tmi.Client({
                     identity: {
                         username: this.twitchName,
@@ -800,14 +811,14 @@
             },
 
             sendReward(id) {
-                if (!this.enableRewards) return;
+                if (!this.rewardsEnabled) return;
                 const reward = this.getReward(id);
                 if (!reward) return;
                 this.sendTmi(`R${reward.id}`);
             },
 
             sendAmount(amount) {
-                if (!this.enableIncentives) return;
+                if (!this.incentivesEnabled) return;
                 const value = parseFloat(amount);
                 const num = value % 1 !== 0 ? value.toFixed(2) : value;
                 this.sendTmi(`$${num}`);
@@ -815,8 +826,9 @@
 
             sendTmi(message) {
                 if (tmi && tmi.readyState() === 'OPEN') {
-                    if (debug) console.log("SENDING: ", message);
-                    tmi.say(this.twitchChannel, message.toString());
+                    const str = `${this.prefix}${message}`
+                    if (debug) console.log("SENDING: ", str);
+                    tmi.say(this.twitchChannel, str);
                 }
             },
 
