@@ -150,12 +150,11 @@
                         </v-row>
                     </v-col>
                     <div>
-                        <v-btn small color="deep-purple lighten-1" @click="sendCustom" class="mr-1">
+                        <v-btn small color="blue" @click="sendCustom" class="mr-1" title="Custom Event">
                             <v-icon>mdi-arrow-decision</v-icon>
                         </v-btn>
-                        <v-btn small color="blue" @click="clearAll" class="mr-1">
-                            Clear
-                            <v-icon class="ml-1">mdi-notification-clear-all</v-icon>
+                        <v-btn small color="blue" @click="clearAll" class="mr-1" title="Clear All">
+                            <v-icon>mdi-notification-clear-all</v-icon>
                         </v-btn>
                         <v-btn small @click="tiltifyDialog = true" :color="tiltifyButtonColor"
                                class="mr-1">
