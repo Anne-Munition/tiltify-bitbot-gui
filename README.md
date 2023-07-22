@@ -6,7 +6,7 @@
 ## Initial Setup
 * Download and extract files.
 * Make a copy of the ``config-example.js`` file and rename it ``config.js``.
-* Retrieve and enter the Tiltify Access Token and Twitch Chat OAuth Token.
+* Retrieve and enter a Tiltify Access Token and Twitch Chat OAuth Token into the ``config.js`` file.
 * Open the ``tiltify.html`` file with a browser. (Tested in Firefox and Chrome)
 
 ## How to obtain a Tiltify Access Token
