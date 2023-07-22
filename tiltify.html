@@ -638,7 +638,7 @@
                 const tokenData = await this.validateTwitchToken();
                 this.twitchName = tokenData.login;
                 this.twitchChannel = localStorage.getItem('twitch_channel');
-                this.twitchPrefix = JSON.parse(localStorage.getItem('twitch_prefix'));
+                this.twitchPrefix = localStorage.getItem('twitch_prefix');
                 if (this.twitchChannel && twitchToken) {
                     this.twitchConnect();
                 }
