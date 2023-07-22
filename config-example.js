@@ -1,7 +1,7 @@
 // RENAME THIS FILE TO: config.js
 
-// Tiltify Application Access Token.
-// https://dashboard.tiltify.com/YOUR_USERNAME/my-account/connected-accounts/applications
+// Tiltify Application Keys - API Access Token.
+// https://app.tiltify.com/developers
 const tiltifyToken = "123456789";
 
 // Twitch chat OAuth Token.

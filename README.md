@@ -9,6 +9,19 @@
 * Retrieve and enter the Tiltify Access Token and Twitch Chat OAuth Token.
 * Open the ``tiltify.html`` file with a browser. (Tested in Firefox and Chrome)
 
+## How to obtain a Tiltify Access Token
+* Navigate to https://app.tiltify.com/developers
+* Click on ``Create application +``
+* Enter an App name and a Redirect URI of http://localhost and click ``Create App`` at the bottom.
+* Find the API access token at the bottom of the page in the ``Application Keys`` section.
+* Click to unblur and copy the ``API access token``. This is what you enter in the ``config.js`` file.
+
+## How to obtain a Twitch Chat OAuth Token
+* Navigate to https://twitchapps.com/tmi/
+* Click the Connect link.
+* If redirected to Twitch, click allow access.
+* You will then be redirected to the twitchapps website where it will display the oauth token. This is what you need to enter in the ``config.js`` file.
+
 ## GUI Settings
 The Tiltify and Twitch settings button colors signify the connection status.
 * Red -> Disconnected
