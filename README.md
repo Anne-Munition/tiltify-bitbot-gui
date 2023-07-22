@@ -4,7 +4,8 @@
 ![Example Image](./example.png)
 
 ## Initial Setup
-* Download and extract files and copy ``config-example.js`` to ``config.js``.
+* Download and extract files.
+* Make a copy of the ``config-example.js`` file and rename it ``config.js``.
 * Retrieve and enter the Tiltify Access Token and Twitch Chat OAuth Token.
 * Open the ``tiltify.html`` file with a browser. (Tested in Firefox and Chrome)
 
